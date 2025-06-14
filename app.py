@@ -90,7 +90,25 @@ if submitted:
         if col in label_encoders:
             input_df[col] = label_encoders[col].transform(input_df[col])
 
+    bmi = Weight / (Height ** 2)
+    st.info(f"BMI Anda: {bmi:.2f}")
+
     prediction = model.predict(input_df)[0]
     prediction_label = le_y.inverse_transform([prediction])[0]
 
     st.success(f"\U0001F4CA Hasil Prediksi Obesitas Anda: {prediction_label}")
+
+    # Evaluasi berdasarkan BMI standar WHO
+    if bmi < 18.5:
+        kategori_bmi = "Underweight"
+    elif 18.5 <= bmi < 25:
+        kategori_bmi = "Normal"
+    elif 25 <= bmi < 30:
+        kategori_bmi = "Overweight"
+    else:
+        kategori_bmi = "Obese"
+
+    st.markdown(f"**Kategori BMI berdasarkan WHO: {kategori_bmi}**")
+
+    if (kategori_bmi == "Normal" and "Obesity" in prediction_label) or (kategori_bmi == "Underweight" and "Obesity" in prediction_label):
+        st.warning("⚠️ Hasil prediksi tampaknya tidak sesuai dengan kategori BMI Anda. Model mungkin bias oleh fitur lain seperti rokok atau transportasi.")
