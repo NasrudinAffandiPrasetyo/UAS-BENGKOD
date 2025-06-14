@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 
 st.set_page_config(page_title="Obesity Level Prediction App", layout="wide")
 
@@ -20,12 +21,15 @@ def load_model():
     X = df[selected_features]
     y = df["NObeyesdad"]
 
+    le = LabelEncoder()
+    y_encoded = le.fit_transform(y)
+
     model = RandomForestClassifier(random_state=42)
-    model.fit(X, y)
+    model.fit(X, y_encoded)
 
-    return model, selected_features
+    return model, selected_features, le
 
-model, selected_features = load_model()
+model, selected_features, le = load_model()
 
 st.markdown("## \U0001F4DD Masukkan Data Anda:")
 
@@ -57,8 +61,9 @@ if submitted:
     bmi = Weight / (Height ** 2)
     st.info(f"BMI Anda: {bmi:.2f}")
 
-    prediction = model.predict(input_df)[0]
-    st.success(f"\U0001F4CA Hasil Prediksi Obesitas Anda: {prediction}")
+    prediction_encoded = model.predict(input_df)[0]
+    prediction_label = le.inverse_transform([prediction_encoded])[0]
+    st.success(f"\U0001F4CA Hasil Prediksi Obesitas Anda: {prediction_label}")
 
     # Evaluasi berdasarkan BMI standar WHO
     if bmi < 18.5:
@@ -72,5 +77,5 @@ if submitted:
 
     st.markdown(f"**Kategori BMI berdasarkan WHO: {kategori_bmi}**")
 
-    if (kategori_bmi == "Normal" and "Obesity" in prediction) or (kategori_bmi == "Underweight" and "Obesity" in prediction):
+    if (kategori_bmi == "Normal" and "Obesity" in prediction_label) or (kategori_bmi == "Underweight" and "Obesity" in prediction_label):
         st.warning("⚠️ Hasil prediksi tampaknya tidak sesuai dengan kategori BMI Anda. Model sebelumnya mungkin bias, kini difokuskan pada numerik.")
