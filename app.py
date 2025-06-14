@@ -1,51 +1,82 @@
+# streamlit_app.py
+
+import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
+import pickle
 
-# Load dataset
-df = pd.read_csv("ObesityDataSet (1).csv")
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
 
-# Pilih fitur numerik utama dan target
-selected_features = ["Age", "Height", "Weight", "FCVC", "CH2O", "FAF", "TUE", "NCP"]
-df = df.dropna(subset=selected_features + ["NObeyesdad"])
+# -----------------------------------------------------
+# Load Model
+# -----------------------------------------------------
+# Ganti path ini sesuai file model kamu
+MODEL_PATH = 'stramlitUAS/best_rf_model.pkl'
 
-# Konversi fitur ke numerik
-for col in selected_features:
-    df[col] = pd.to_numeric(df[col], errors='coerce')
+with open(MODEL_PATH, 'rb') as file:
+    model = pickle.load(file)
 
-# Hapus baris yang gagal dikonversi
-df = df.dropna(subset=selected_features)
+# -----------------------------------------------------
+# Layout Streamlit
+# -----------------------------------------------------
+st.title("Obesity Level Prediction App")
+st.markdown("""
+Aplikasi ini memprediksi tingkat obesitas berdasarkan data yang Anda inputkan.
+""")
 
-# Feature & target
-X = df[selected_features]
-y = df["NObeyesdad"]
+# -----------------------------------------------------
+# Input User
+# -----------------------------------------------------
+# Numerical Inputs
+st.header("Masukkan Data Anda:")
+age = st.number_input('Usia', min_value=1, max_value=120, value=25)
+height = st.number_input('Tinggi Badan (m)', min_value=1.0, max_value=2.5, value=1.70)
+weight = st.number_input('Berat Badan (kg)', min_value=20, max_value=300, value=70)
+fcvc = st.slider('Frekuensi makan sayuran (1-3)', 1, 3, 2)
+ncp = st.slider('Jumlah makan besar/hari', 1, 4, 3)
+ch2o = st.slider('Konsumsi air (1-3)', 1, 3, 2)
+faf = st.slider('Aktivitas fisik (0-3)', 0, 3, 1)
+tue = st.slider('Waktu layar (0-2)', 0, 2, 1)
 
-# Encode label target
-le = LabelEncoder()
-y_encoded = le.fit_transform(y)
+# Categorical Inputs
+gender = st.selectbox('Jenis Kelamin', ['Male', 'Female'])
+family_history = st.selectbox('Riwayat Keluarga Kelebihan Berat Badan?', ['yes', 'no'])
+favc = st.selectbox('Sering makan makanan tinggi kalori?', ['yes', 'no'])
+caec = st.selectbox('Makan camilan di antara waktu makan?', ['no', 'Sometimes', 'Frequently', 'Always'])
+smoke = st.selectbox('Merokok?', ['yes', 'no'])
+scc = st.selectbox('Memantau asupan kalori?', ['yes', 'no'])
+calc = st.selectbox('Konsumsi alkohol?', ['no', 'Sometimes', 'Frequently', 'Always'])
+mtrans = st.selectbox('Transportasi utama?', [
+    'Automobile', 'Motorbike', 'Bike', 'Public_Transportation', 'Walking'
+])
 
-# Simpan LabelEncoder
-joblib.dump(le, "label_encoder.pkl")
+# -----------------------------------------------------
+# Buat DataFrame Input
+# -----------------------------------------------------
+input_data = pd.DataFrame({
+    'Age': [age],
+    'Height': [height],
+    'Weight': [weight],
+    'FCVC': [fcvc],
+    'NCP': [ncp],
+    'CH2O': [ch2o],
+    'FAF': [faf],
+    'TUE': [tue],
+    'Gender': [gender],
+    'family_history_with_overweight': [family_history],
+    'FAVC': [favc],
+    'CAEC': [caec],
+    'SMOKE': [smoke],
+    'SCC': [scc],
+    'CALC': [calc],
+    'MTRANS': [mtrans]
+})
 
-# Standarisasi
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-
-# Simpan Scaler
-joblib.dump(scaler, "scaler.pkl")
-
-# Split dan latih model
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_encoded, test_size=0.2, random_state=42)
-model = RandomForestClassifier(random_state=42)
-model.fit(X_train, y_train)
-
-# Simpan model
-joblib.dump(model, "best_model_rf.pkl")
-
-# Evaluasi
-y_pred = model.predict(X_test)
-print("Classification Report:\n", classification_report(y_test, y_pred, target_names=le.classes_))
+# -----------------------------------------------------
+# Prediksi
+# -----------------------------------------------------
+if st.button('Prediksi'):
+    prediction = model.predict(input_data)
+    st.subheader('Hasil Prediksi:')
+    st.success(f"Tingkat Obesitas Anda: **{prediction[0]}**")
