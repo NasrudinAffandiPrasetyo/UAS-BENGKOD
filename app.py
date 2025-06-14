@@ -7,6 +7,10 @@ import pickle
 
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
+import os
+st.write("Current working dir:", os.getcwd())
+st.write("Model file exists?", os.path.exists('best_rf_model.pkl'))
+
 
 # -----------------------------------------------------
 # Load Model
