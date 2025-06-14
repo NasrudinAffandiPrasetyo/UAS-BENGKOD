@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -16,8 +17,16 @@ menggunakan fitur numerik utama agar hasil prediksi lebih akurat dan logis.
 def load_model():
     df = pd.read_csv("ObesityDataSet (1).csv")
 
-    # Gunakan hanya fitur numerik utama
+    # Hapus baris yang memiliki missing value atau data non-numerik di fitur yang digunakan
     selected_features = ["Age", "Height", "Weight", "FCVC", "CH2O", "FAF", "TUE"]
+    df = df.dropna(subset=selected_features + ["NObeyesdad"])
+
+    # Konversi ke tipe numerik jika perlu
+    for col in selected_features:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    df = df.dropna(subset=selected_features)  # pastikan tidak ada NaN setelah konversi
+
     X = df[selected_features]
     y = df["NObeyesdad"]
 
