@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 
 # Load dataset
-df = pd.read_csv("ObesityDataSet (2).csv")
+df = pd.read_csv("ObesityDataSet (1).csv")
 
 # Pilih fitur numerik utama dan target
 selected_features = ["Age", "Height", "Weight", "FCVC", "CH2O", "FAF", "TUE", "NCP"]
