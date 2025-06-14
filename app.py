@@ -5,7 +5,7 @@ from sklearn.preprocessing import LabelEncoder
 
 st.set_page_config(page_title="Obesity Level Prediction App", layout="wide")
 
-st.title("💡 Obesity Level Prediction App")
+st.title("\U0001F4A1 Obesity Level Prediction App")
 st.markdown("""
 Aplikasi ini memprediksi tingkat obesitas berdasarkan data yang Anda inputkan.
 Silakan isi formulir di bawah ini, lalu klik tombol prediksi.
@@ -14,11 +14,14 @@ Silakan isi formulir di bawah ini, lalu klik tombol prediksi.
 @st.cache_data
 def load_model():
     df = pd.read_csv("ObesityDataSet (1).csv")
-    le = LabelEncoder()
+    label_encoders = {}
+
     for col in df.select_dtypes(include="object").columns:
         if col != "NObeyesdad":
+            le = LabelEncoder()
             df[col] = le.fit_transform(df[col])
-    
+            label_encoders[col] = le
+
     X = df.drop("NObeyesdad", axis=1)
     y = df["NObeyesdad"]
 
@@ -28,11 +31,11 @@ def load_model():
     model = RandomForestClassifier()
     model.fit(X, y_encoded)
 
-    return model, le, le_y, X.columns
+    return model, label_encoders, le_y, X.columns
 
-model, le, le_y, feature_cols = load_model()
+model, label_encoders, le_y, feature_cols = load_model()
 
-st.markdown("## 📝 Masukkan Data Anda:")
+st.markdown("## \U0001F4DD Masukkan Data Anda:")
 
 with st.form("input_form"):
     col1, col2 = st.columns(2)
@@ -55,7 +58,7 @@ with st.form("input_form"):
         CALC = st.selectbox("Konsumsi alkohol?", ["no", "Sometimes", "Frequently", "Always"])
         MTRANS = st.selectbox("Transportasi utama?", ["Automobile", "Motorbike", "Bike", "Public_Transportation", "Walking"])
 
-    submitted = st.form_submit_button("🚀 Prediksi Obesitas")
+    submitted = st.form_submit_button("\U0001F680 Prediksi Obesitas")
 
 if submitted:
     input_df = pd.DataFrame([{
@@ -77,7 +80,6 @@ if submitted:
         "MTRANS": MTRANS
     }])
 
-    # Tambahkan kolom kosong jika ada yang tidak disertakan
     for col in feature_cols:
         if col not in input_df.columns:
             input_df[col] = 0
@@ -85,9 +87,10 @@ if submitted:
     input_df = input_df[feature_cols]
 
     for col in input_df.select_dtypes(include="object").columns:
-        input_df[col] = le.fit_transform(input_df[col])
+        if col in label_encoders:
+            input_df[col] = label_encoders[col].transform(input_df[col])
 
     prediction = model.predict(input_df)[0]
     prediction_label = le_y.inverse_transform([prediction])[0]
 
-    st.success(f"📊 Hasil Prediksi Obesitas Anda: {prediction_label}")
+    st.success(f"\U0001F4CA Hasil Prediksi Obesitas Anda: {prediction_label}")
