@@ -16,11 +16,8 @@ st.write("Model file exists?", os.path.exists('best_rf_model.pkl'))
 # Load Model
 # -----------------------------------------------------
 # Ganti path ini sesuai file model kamu
+
 MODEL_PATH = 'best_rf_model.pkl'
-
-
-with open(MODEL_PATH, 'rb') as file:
-    model = pickle.load(file)
 
 # -----------------------------------------------------
 # Layout Streamlit
