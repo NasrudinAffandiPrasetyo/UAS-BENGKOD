@@ -12,7 +12,8 @@ from sklearn.compose import ColumnTransformer
 # Load Model
 # -----------------------------------------------------
 # Ganti path ini sesuai file model kamu
-MODEL_PATH = 'stramlitUAS/best_rf_model.pkl'
+MODEL_PATH = 'best_rf_model.pkl'
+
 
 with open(MODEL_PATH, 'rb') as file:
     model = pickle.load(file)
