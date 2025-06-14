@@ -1,56 +1,51 @@
-import streamlit as st
 import pandas as pd
+import numpy as np
 import joblib
-from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 
-st.set_page_config(page_title="Obesity Prediction App", layout="wide")
-st.title("\U0001F4CA Aplikasi Prediksi Tingkat Obesitas")
+# Load dataset
+df = pd.read_csv("ObesityDataSet (2).csv")
 
-st.markdown("""
-Masukkan data berikut untuk memprediksi tingkat obesitas Anda.
-Model yang digunakan telah dilatih dan dioptimalkan menggunakan GridSearchCV.
-""")
+# Pilih fitur numerik utama dan target
+selected_features = ["Age", "Height", "Weight", "FCVC", "CH2O", "FAF", "TUE", "NCP"]
+df = df.dropna(subset=selected_features + ["NObeyesdad"])
 
-# Load model dan scaler
-model = joblib.load("best_model_rf.pkl")
-scaler = joblib.load("scaler.pkl")
-label_encoder = joblib.load("label_encoder.pkl")
+# Konversi fitur ke numerik
+for col in selected_features:
+    df[col] = pd.to_numeric(df[col], errors='coerce')
 
-with st.form("prediction_form"):
-    col1, col2 = st.columns(2)
-    with col1:
-        Age = st.slider("Usia", 10, 100, 25)
-        Height = st.number_input("Tinggi Badan (m)", value=1.70)
-        Weight = st.number_input("Berat Badan (kg)", value=70)
-        FCVC = st.slider("Frekuensi makan sayur (1-3)", 1.0, 3.0, 2.0)
-    with col2:
-        CH2O = st.slider("Konsumsi air harian (1-3)", 1.0, 3.0, 2.0)
-        FAF = st.slider("Aktivitas fisik mingguan (0-3)", 0.0, 3.0, 1.0)
-        TUE = st.slider("Waktu layar harian (0-2)", 0.0, 2.0, 1.0)
-        NCP = st.slider("Jumlah makan utama/hari (1-4)", 1, 4, 3)
+# Hapus baris yang gagal dikonversi
+df = df.dropna(subset=selected_features)
 
-    submitted = st.form_submit_button("Prediksi")
+# Feature & target
+X = df[selected_features]
+y = df["NObeyesdad"]
 
-if submitted:
-    X_new = pd.DataFrame([[Age, Height, Weight, FCVC, CH2O, FAF, TUE, NCP]],
-                         columns=["Age", "Height", "Weight", "FCVC", "CH2O", "FAF", "TUE", "NCP"])
+# Encode label target
+le = LabelEncoder()
+y_encoded = le.fit_transform(y)
 
-    X_scaled = scaler.transform(X_new)
-    y_pred = model.predict(X_scaled)
-    prediction_label = label_encoder.inverse_transform(y_pred)[0]
+# Simpan LabelEncoder
+joblib.dump(le, "label_encoder.pkl")
 
-    st.success(f"\U0001F4A1 Prediksi Tingkat Obesitas Anda: {prediction_label}")
+# Standarisasi
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
-    bmi = Weight / (Height ** 2)
-    st.info(f"BMI Anda: {bmi:.2f}")
+# Simpan Scaler
+joblib.dump(scaler, "scaler.pkl")
 
-    if bmi < 18.5:
-        kategori = "Underweight"
-    elif 18.5 <= bmi < 25:
-        kategori = "Normal"
-    elif 25 <= bmi < 30:
-        kategori = "Overweight"
-    else:
-        kategori = "Obese"
+# Split dan latih model
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_encoded, test_size=0.2, random_state=42)
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train, y_train)
 
-    st.markdown(f"**Kategori BMI berdasarkan WHO: {kategori}**")
+# Simpan model
+joblib.dump(model, "best_model_rf.pkl")
+
+# Evaluasi
+y_pred = model.predict(X_test)
+print("Classification Report:\n", classification_report(y_test, y_pred, target_names=le.classes_))
